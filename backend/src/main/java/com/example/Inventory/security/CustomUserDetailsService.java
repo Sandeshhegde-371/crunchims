@@ -4,9 +4,10 @@ import com.example.Inventory.model.Account;
 import com.example.Inventory.repository.AccountRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.*;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.stereotype.Service;
 
-import java.util.Collections;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -21,10 +22,11 @@ public class CustomUserDetailsService implements UserDetailsService {
                 .findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
+        // ✅ ADD ROLE HERE
         return new User(
                 account.getEmail(),
                 account.getPasswordHash(),
-                Collections.emptyList()
+                List.of(new SimpleGrantedAuthority("ROLE_" + account.getRole()))
         );
     }
 }

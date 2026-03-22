@@ -25,8 +25,14 @@ public class SecurityConfig {
 
         http
                 .csrf(csrf -> csrf.disable())
+
+                // ✅ ENABLE CORS
+                .cors(cors -> {})
+
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/auth/**","/error","/user/signup").permitAll()
+                        .requestMatchers("/auth/**", "/error", "/user/signup").permitAll()
+                        .requestMatchers("/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/user/**").hasRole("CUSTOMER")
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session ->

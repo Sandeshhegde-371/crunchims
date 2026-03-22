@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'http://localhost:8080', // Default Spring Boot port
+  baseURL: 'http://localhost:8082', // Default Spring Boot port
 });
 
 api.interceptors.request.use((config) => {
