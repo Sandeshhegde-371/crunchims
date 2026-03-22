@@ -1,3 +1,5 @@
+import React, { useEffect, useState } from 'react';
+import { adminService } from '../services/api';
 import { Activity, User, Calendar, RefreshCcw, Info } from 'lucide-react';
 
 const ActivityLogs = () => {
