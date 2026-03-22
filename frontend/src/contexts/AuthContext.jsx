@@ -15,17 +15,8 @@ export const AuthProvider = ({ children }) => {
     setLoading(false);
   }, []);
 
-  const login = (token, email) => {
+  const login = (token, email, role) => {
     localStorage.setItem('token', token);
-    
-    // Workaround for role detection as backend doesn't provide it
-    let role = 'CUSTOMER';
-    if (email === 'admin@inventory.com') {
-      role = 'ADMIN';
-    } else if (email.includes('employee') || email.includes('staff')) {
-      role = 'EMPLOYEE';
-    }
-    
     const userData = { email, role };
     localStorage.setItem('user', JSON.stringify(userData));
     setUser(userData);

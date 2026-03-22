@@ -19,13 +19,11 @@ const Login = () => {
 
     try {
       const { data } = await authService.login(email, password);
-      login(data.token, email);
+      login(data.token, data.email, data.role);
       
-      // Navigate based on role (detected in AuthContext)
-      const role = email === 'admin@inventory.com' ? 'ADMIN' : (email.includes('employee') ? 'EMPLOYEE' : 'CUSTOMER');
-      
-      if (role === 'ADMIN') navigate('/admin/dashboard');
-      else if (role === 'EMPLOYEE') navigate('/inventory/manage');
+      // Navigate based on role provided by backend
+      if (data.role === 'ADMIN') navigate('/admin/dashboard');
+      else if (data.role === 'EMPLOYEE') navigate('/inventory/manage');
       else navigate('/shop/showroom');
       
     } catch (err) {
