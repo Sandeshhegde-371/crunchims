@@ -36,6 +36,7 @@ export const inventoryService = {
 export const userService = {
   createOrder: (items) => api.post('/user/orders', { items }),
   getOrders: () => api.get('/user/orders'),
+  returnItem: (orderItemId) => api.post(`/user/return/${orderItemId}`),
 };
 
 export default api;
