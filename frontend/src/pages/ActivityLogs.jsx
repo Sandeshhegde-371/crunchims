@@ -1,7 +1,4 @@
-import React, { useEffect, useState } from 'react';
-import { adminService } from '../services/api';
 import { Activity, User, Calendar, RefreshCcw, Info } from 'lucide-react';
-import { format } from 'date-fns';
 
 const ActivityLogs = () => {
   const [logs, setLogs] = useState([]);
@@ -80,7 +77,7 @@ const ActivityLogs = () => {
                       <div className="flex items-center gap-3 text-slate-600">
                         <Calendar size={16} className="text-slate-400" />
                         <span className="text-sm font-medium">
-                          {format(new Date(log.createdAt), 'MMM dd, yyyy HH:mm:ss')}
+                          {new Date(log.createdAt).toLocaleString()}
                         </span>
                       </div>
                     </td>
