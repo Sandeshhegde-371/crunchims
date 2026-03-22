@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Users, Package, ShoppingBag, LogOut, Menu } from 'lucide-react';
+import { LayoutDashboard, Users, Package, ShoppingBag, LogOut, Menu, Activity } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 const Sidebar = ({ isOpen, toggleSidebar }) => {
@@ -13,13 +13,14 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
   };
 
   const navItems = [
-    { name: 'Dashboard', path: '/admin/dashboard', icon: LayoutDashboard, role: 'ADMIN' },
-    { name: 'Staff Management', path: '/admin/staff', icon: Users, role: 'ADMIN' },
-    { name: 'Manage Inventory', path: '/inventory/manage', icon: Package, role: 'EMPLOYEE' },
-    { name: 'Showroom', path: '/shop/showroom', icon: ShoppingBag, role: 'CUSTOMER' },
+    { name: 'Dashboard', path: '/admin/dashboard', icon: LayoutDashboard, roles: ['ADMIN'] },
+    { name: 'Activity Logs', path: '/admin/logs', icon: Activity, roles: ['ADMIN'] },
+    { name: 'Staff Management', path: '/admin/staff', icon: Users, roles: ['ADMIN'] },
+    { name: 'Manage Inventory', path: '/inventory/manage', icon: Package, roles: ['ADMIN', 'EMPLOYEE'] },
+    { name: 'Showroom', path: '/shop/showroom', icon: ShoppingBag, roles: ['CUSTOMER'] },
   ];
 
-  const filteredItems = navItems.filter(item => item.role === user?.role);
+  const filteredItems = navItems.filter(item => item.roles.includes(user?.role));
 
   return (
     <>

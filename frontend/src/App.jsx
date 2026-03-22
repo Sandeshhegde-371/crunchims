@@ -6,6 +6,7 @@ import Login from './pages/Login';
 import AdminDashboard from './pages/AdminDashboard';
 import StaffManagement from './pages/StaffManagement';
 import InventoryManagement from './pages/InventoryManagement';
+import ActivityLogs from './pages/ActivityLogs';
 import ShopShowroom from './pages/ShopShowroom';
 
 function App() {
@@ -17,10 +18,11 @@ function App() {
         <Route element={<Layout />}>
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
           <Route path="/admin/staff" element={<StaffManagement />} />
+          <Route path="/admin/logs" element={<ActivityLogs />} />
         </Route>
       </Route>
 
-      <Route element={<ProtectedRoute allowedRoles={['EMPLOYEE']} />}>
+      <Route element={<ProtectedRoute allowedRoles={['ADMIN', 'EMPLOYEE']} />}>
         <Route element={<Layout />}>
           <Route path="/inventory/manage" element={<InventoryManagement />} />
         </Route>
