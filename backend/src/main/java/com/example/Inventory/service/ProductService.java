@@ -16,4 +16,6 @@ public interface ProductService {
     Product createProduct(CreateProductRequest request, String employeeEmail);
 
     Product reduceStock(AddStockRequest request, String employeeEmail);
+
+    void deleteProduct(Long productId, String employeeEmail);
 }

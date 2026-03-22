@@ -47,4 +47,11 @@ public class EmployeeController {
 
         return productService.createProduct(request, authentication.getName());
     }
+    @DeleteMapping("/product/{id}")
+    public String deleteProduct(@PathVariable Long id,
+                                Authentication authentication) {
+
+        productService.deleteProduct(id, authentication.getName());
+        return "Product deleted successfully";
+    }
 }

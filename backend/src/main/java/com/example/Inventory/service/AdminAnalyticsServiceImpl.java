@@ -50,7 +50,7 @@ public class AdminAnalyticsServiceImpl implements AdminAnalyticsService {
                     category.getName(),
                     totalProducts,
                     lowStock,
-                    BigDecimal.ZERO, // optional (can be improved later)
+                    orderItemRepository.getRevenueByCategory(category.getId()), // optional (can be improved later)
                     0, // optional (orders per category)
                     unitsSold
             );

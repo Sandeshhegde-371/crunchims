@@ -21,7 +21,7 @@ const InventoryManagement = () => {
     description: '',
     price: 0,
     quantity: 0,
-    category: 'ELECTRONICS'
+    category: 'SWEETS'
   });
 
   const fetchProducts = async () => {
@@ -223,10 +223,9 @@ const InventoryManagement = () => {
                 <div className="col-span-2">
                   <label className="block text-sm font-semibold text-slate-700 mb-1">Category</label>
                   <select className="input" value={newProduct.category} onChange={e => setNewProduct({...newProduct, category: e.target.value})}>
-                    <option value="ELECTRONICS">Electronics</option>
-                    <option value="FURNITURE">Furniture</option>
-                    <option value="CLOTHING">Clothing</option>
-                    <option value="GROCERY">Grocery</option>
+                    <option value="SWEETS">SWEETS</option>
+                    <option value="CHIPS">CHIPS</option>
+                    <option value="BARS">BARS</option>
                   </select>
                 </div>
               </div>

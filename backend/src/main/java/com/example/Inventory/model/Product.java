@@ -30,4 +30,7 @@ public class Product {
     private Category category;
 
     private LocalDateTime createdAt;
+
+    @Column(name = "is_active")
+    private Boolean isActive = true;
 }

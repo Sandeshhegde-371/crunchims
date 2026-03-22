@@ -14,7 +14,7 @@ public interface AccountRepository extends JpaRepository<Account, UUID> {
     Optional<Account> findByEmail(String email);
 
     // 👥 Get all employees
-    @Query("SELECT a FROM Account a WHERE a.role = 'EMPLOYEE'")
+    @Query("SELECT a FROM Account a WHERE a.role = 'EMPLOYEE' AND a.isActive = true")
     List<Account> findAllEmployees();
 
     // 👥 Count employees (used in analytics)

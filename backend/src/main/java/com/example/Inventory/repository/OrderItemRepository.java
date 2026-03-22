@@ -23,6 +23,15 @@ public interface OrderItemRepository extends JpaRepository<OrderItem, Long> {
     """)
     long getUnitsSoldByCategory(@Param("categoryId") Long categoryId);
 
+    // 💰 ✅ NEW: Category-wise revenue
+    @Query("""
+        SELECT COALESCE(SUM(oi.unitPrice * oi.quantity), 0)
+        FROM OrderItem oi
+        WHERE oi.product.category.id = :categoryId
+        AND oi.status = 'ORDERED'
+    """)
+    BigDecimal getRevenueByCategory(@Param("categoryId") Long categoryId);
+
     // ✅ Units sold in date range
     @Query("""
         SELECT COALESCE(SUM(oi.quantity), 0)
@@ -33,7 +42,7 @@ public interface OrderItemRepository extends JpaRepository<OrderItem, Long> {
     long getUnitsSoldByDateRange(@Param("start") LocalDateTime start,
                                  @Param("end") LocalDateTime end);
 
-    // 💰 REAL REVENUE (IMPORTANT FIX 🔥)
+    // 💰 REAL REVENUE
     @Query("""
         SELECT COALESCE(SUM(oi.unitPrice * oi.quantity), 0)
         FROM OrderItem oi

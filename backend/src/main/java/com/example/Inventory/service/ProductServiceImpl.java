@@ -28,10 +28,10 @@ public class ProductServiceImpl implements ProductService {
     private final AccountRepository accountRepository;
     private final EmailService emailService;
 
-    // ✅ GET ALL PRODUCTS
+    // ✅ GET ALL ACTIVE PRODUCTS
     @Override
     public List<ProductResponse> getAllProducts() {
-        return productRepository.findAll()
+        return productRepository.findAllActiveProducts()
                 .stream()
                 .map(p -> ProductResponse.builder()
                         .id(p.getId())
@@ -59,6 +59,7 @@ public class ProductServiceImpl implements ProductService {
                 .quantity(request.getQuantity())
                 .category(category)
                 .createdAt(LocalDateTime.now())
+                .isActive(true) // ✅ important
                 .build();
 
         Product saved = productRepository.save(product);
@@ -69,7 +70,6 @@ public class ProductServiceImpl implements ProductService {
                 .createdAt(LocalDateTime.now())
                 .build());
 
-        // 🚨 LOW STOCK CHECK
         checkAndSendLowStockAlert(null, saved, employeeEmail);
 
         return saved;
@@ -83,6 +83,10 @@ public class ProductServiceImpl implements ProductService {
                 .findByName(request.getProductName())
                 .orElseThrow(() -> new RuntimeException("Invalid product"));
 
+        if (Boolean.FALSE.equals(product.getIsActive())) {
+            throw new RuntimeException("Cannot update inactive product");
+        }
+
         int oldQuantity = product.getQuantity();
 
         product.setQuantity(product.getQuantity() + request.getQuantity());
@@ -95,7 +99,6 @@ public class ProductServiceImpl implements ProductService {
                 .createdAt(LocalDateTime.now())
                 .build());
 
-        // 🚨 LOW STOCK CHECK
         checkAndSendLowStockAlert(oldQuantity, saved, employeeEmail);
 
         return saved;
@@ -108,6 +111,10 @@ public class ProductServiceImpl implements ProductService {
         Product product = productRepository
                 .findByName(request.getProductName())
                 .orElseThrow(() -> new RuntimeException("Invalid product"));
+
+        if (Boolean.FALSE.equals(product.getIsActive())) {
+            throw new RuntimeException("Cannot update inactive product");
+        }
 
         if (product.getQuantity() < request.getQuantity()) {
             throw new RuntimeException("Not enough stock");
@@ -125,24 +132,38 @@ public class ProductServiceImpl implements ProductService {
                 .createdAt(LocalDateTime.now())
                 .build());
 
-        // 🚨 LOW STOCK CHECK
         checkAndSendLowStockAlert(oldQuantity, saved, employeeEmail);
 
         return saved;
     }
 
-    // 🚨 LOW STOCK ALERT (SMART VERSION)
+    // ❌ DELETE PRODUCT (SOFT DELETE)
+    @Override
+    public void deleteProduct(Long productId, String employeeEmail) {
+
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new RuntimeException("Product not found"));
+
+        product.setIsActive(false);
+        productRepository.save(product);
+
+        activityLogRepository.save(ActivityLog.builder()
+                .action("Product deleted: " + product.getName())
+                .performedBy(employeeEmail)
+                .createdAt(LocalDateTime.now())
+                .build());
+    }
+
+    // 🚨 LOW STOCK ALERT
     private void checkAndSendLowStockAlert(Integer oldQty, Product product, String employeeEmail) {
 
         int newQty = product.getQuantity();
 
-        // ✅ Trigger ONLY when crossing threshold (>=4 → <4)
         if ((oldQty == null || oldQty >= 4) && newQty < 4) {
 
             List<String> emails = accountRepository.findAllEmployeeAndAdminEmails();
 
             for (String email : emails) {
-
                 emailService.sendMail(
                         email,
                         "⚠ Low Stock Alert",
