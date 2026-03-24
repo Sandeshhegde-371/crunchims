@@ -5,10 +5,10 @@ import {
   History, CheckCircle2, ChevronRight, X
 } from 'lucide-react';
 import { inventoryService, adminService } from '../services/api';
-import { AuthContext } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/AuthContext';
 
 const InventoryManagement = () => {
-  const { user } = useContext(AuthContext);
+  const { user } = useAuth();
   const isAdmin = user?.role === 'ADMIN';
   const service = isAdmin ? adminService : inventoryService;
 
