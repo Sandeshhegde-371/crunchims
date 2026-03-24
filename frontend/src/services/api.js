@@ -23,7 +23,15 @@ export const adminService = {
   getAnalyticsByType: (type) => api.get(`/admin/analytics/${type}`),
   getEmployees: () => api.get('/admin/employees'),
   createEmployee: (data) => api.post('/admin/create-employee', data),
+  updateEmployee: (id, data) => api.put(`/admin/employee/${id}`, data),
+  deleteEmployee: (id) => api.delete(`/admin/employee/${id}`),
   getActivityLogs: () => api.get('/admin/activity-logs'),
+  // Admin Inventory
+  getProducts: () => api.get('/admin/products'),
+  addProduct: (data) => api.post('/admin/add-product', data),
+  addStock: (productName, quantity) => api.post('/admin/add-stock', { productName, quantity }),
+  reduceStock: (productName, quantity) => api.post('/admin/reduce-stock', { productName, quantity }),
+  deleteProduct: (id) => api.delete(`/admin/product/${id}`),
 };
 
 export const inventoryService = {
@@ -31,6 +39,7 @@ export const inventoryService = {
   addProduct: (data) => api.post('/employee/add-product', data),
   addStock: (productName, quantity) => api.post('/employee/add-stock', { productName, quantity }),
   reduceStock: (productName, quantity) => api.post('/employee/reduce-stock', { productName, quantity }),
+  deleteProduct: (id) => api.delete(`/employee/product/${id}`),
 };
 
 export const userService = {

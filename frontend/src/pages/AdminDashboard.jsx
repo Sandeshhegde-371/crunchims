@@ -26,7 +26,7 @@ const AdminDashboard = () => {
       const [overall, categories, products] = await Promise.all([
         adminService.getAnalytics(),
         adminService.getCategoryAnalytics(),
-        inventoryService.getProducts()
+        adminService.getProducts()
       ]);
       
       setAnalytics(overall.data);

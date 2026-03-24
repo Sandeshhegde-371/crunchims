@@ -1,12 +1,17 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useContext } from 'react';
 import { 
   Plus, Search, Package, ArrowUpRight, ArrowDownRight, 
   Trash2, Edit3, MoreVertical, Loader2, AlertCircle, 
   History, CheckCircle2, ChevronRight, X
 } from 'lucide-react';
-import { inventoryService } from '../services/api';
+import { inventoryService, adminService } from '../services/api';
+import { AuthContext } from '../contexts/AuthContext';
 
 const InventoryManagement = () => {
+  const { user } = useContext(AuthContext);
+  const isAdmin = user?.role === 'ADMIN';
+  const service = isAdmin ? adminService : inventoryService;
+
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -27,7 +32,7 @@ const InventoryManagement = () => {
   const fetchProducts = async () => {
     setLoading(true);
     try {
-      const { data } = await inventoryService.getProducts();
+      const { data } = await service.getProducts();
       setProducts(data);
     } catch (err) {
       console.error(err);
@@ -38,15 +43,15 @@ const InventoryManagement = () => {
 
   useEffect(() => {
     fetchProducts();
-  }, []);
+  }, [isAdmin]);
 
   const handleAddProduct = async (e) => {
     e.preventDefault();
     setSubmitting(true);
     try {
-      await inventoryService.addProduct(newProduct);
+      await service.addProduct(newProduct);
       setShowAddModal(false);
-      setNewProduct({ name: '', description: '', price: 0, quantity: 0, category: 'ELECTRONICS' });
+      setNewProduct({ name: '', description: '', price: 0, quantity: 0, category: 'SWEETS' });
       fetchProducts();
     } catch (err) {
       alert('Failed to add product');
@@ -60,9 +65,9 @@ const InventoryManagement = () => {
     setSubmitting(true);
     try {
       if (stockAction === 'add') {
-        await inventoryService.addStock(selectedProduct.name, stockQuantity);
+        await service.addStock(selectedProduct.name, stockQuantity);
       } else {
-        await inventoryService.reduceStock(selectedProduct.name, stockQuantity);
+        await service.reduceStock(selectedProduct.name, stockQuantity);
       }
       setShowStockModal(false);
       setStockQuantity(1);
@@ -71,6 +76,16 @@ const InventoryManagement = () => {
       alert(err.response?.data?.message || 'Failed to update stock');
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleDeleteProduct = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this product?')) return;
+    try {
+      await service.deleteProduct(id);
+      fetchProducts();
+    } catch (err) {
+      alert('Failed to delete product');
     }
   };
 
@@ -126,7 +141,7 @@ const InventoryManagement = () => {
                   <td colSpan="6" className="px-6 py-12 text-center text-slate-400">No products found.</td>
                 </tr>
               ) : products.map((product) => (
-                <tr key={product.id} className="hover:bg-slate-50/50 transition-all group">
+                <tr key={product.id} className="hover:bg-slate-50/50 transition-all">
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-xl bg-primary-100 flex items-center justify-center text-primary-600">
@@ -170,20 +185,27 @@ const InventoryManagement = () => {
                     )}
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="flex items-center justify-end gap-2">
                       <button 
                         onClick={() => { setSelectedProduct(product); setStockAction('add'); setShowStockModal(true); }}
-                        className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg"
+                        className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all"
                         title="Add Stock"
                       >
                         <ArrowUpRight size={18} />
                       </button>
                       <button 
                         onClick={() => { setSelectedProduct(product); setStockAction('reduce'); setShowStockModal(true); }}
-                        className="p-2 text-amber-600 hover:bg-amber-50 rounded-lg"
+                        className="p-2 text-amber-600 hover:bg-amber-50 rounded-lg transition-all"
                         title="Reduce Stock"
                       >
                         <ArrowDownRight size={18} />
+                      </button>
+                      <button 
+                        onClick={() => handleDeleteProduct(product.id)}
+                        className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                        title="Delete Product"
+                      >
+                        <Trash2 size={18} />
                       </button>
                     </div>
                   </td>

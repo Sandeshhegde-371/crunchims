@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { Users, UserPlus, Search, Mail, Shield, Loader2, RefreshCcw } from 'lucide-react';
+import { Users, UserPlus, Search, Mail, Shield, Loader2, RefreshCcw, Edit3, Trash2, X } from 'lucide-react';
 import { adminService } from '../services/api';
 
 const StaffManagement = () => {
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [newStaff, setNewStaff] = useState({ fullName: '', email: '', password: '' });
+  const [editingStaff, setEditingStaff] = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
   const fetchEmployees = async () => {
@@ -37,6 +39,34 @@ const StaffManagement = () => {
       alert('Failed to create staff member');
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleUpdateStaff = async (e) => {
+    e.preventDefault();
+    setSubmitting(true);
+    try {
+      await adminService.updateEmployee(editingStaff.id, {
+        fullName: editingStaff.fullName,
+        email: editingStaff.email
+      });
+      setShowEditModal(false);
+      setEditingStaff(null);
+      fetchEmployees();
+    } catch (err) {
+      alert('Failed to update staff member');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDeleteStaff = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this staff member?')) return;
+    try {
+      await adminService.deleteEmployee(id);
+      fetchEmployees();
+    } catch (err) {
+      alert('Failed to delete staff member');
     }
   };
 
@@ -97,7 +127,7 @@ const StaffManagement = () => {
                   </td>
                 </tr>
               ) : employees.map((staff) => (
-                <tr key={staff.id} className="hover:bg-slate-50/50 transition-colors group">
+                <tr key={staff.id} className="hover:bg-slate-50/50 transition-colors">
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 font-bold">
@@ -124,9 +154,22 @@ const StaffManagement = () => {
                     </span>
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <button className="text-slate-400 hover:text-red-500 font-medium text-sm transition-colors opacity-0 group-hover:opacity-100">
-                      Disable Access
-                    </button>
+                    <div className="flex items-center justify-end gap-3">
+                      <button 
+                        onClick={() => { setEditingStaff(staff); setShowEditModal(true); }}
+                        className="p-2 text-slate-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-all"
+                        title="Edit Staff"
+                      >
+                        <Edit3 size={18} />
+                      </button>
+                      <button 
+                        onClick={() => handleDeleteStaff(staff.id)}
+                        className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                        title="Delete Staff"
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -142,7 +185,7 @@ const StaffManagement = () => {
             <div className="flex items-center justify-between mb-8">
               <h2 className="text-2xl font-bold text-slate-900">Add Staff Member</h2>
               <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-slate-600">
-                <Search className="rotate-45" size={24} />
+                <X size={24} />
               </button>
             </div>
 
@@ -194,7 +237,61 @@ const StaffManagement = () => {
                   disabled={submitting}
                   className="flex-1 btn-primary py-3"
                 >
-                  {submitting ? <Loader2 className="animate-spin" size={20} /> : 'Create Account'}
+                  {submitting ? <Loader2 className="animate-spin mx-auto" size={20} /> : 'Create Account'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Staff Modal */}
+      {showEditModal && editingStaff && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl p-8 animate-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between mb-8">
+              <h2 className="text-2xl font-bold text-slate-900">Edit Staff Member</h2>
+              <button onClick={() => setShowEditModal(false)} className="text-slate-400 hover:text-slate-600">
+                <X size={24} />
+              </button>
+            </div>
+
+            <form onSubmit={handleUpdateStaff} className="space-y-6">
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-2">Full Name</label>
+                <input 
+                  type="text" 
+                  required
+                  value={editingStaff.fullName}
+                  onChange={(e) => setEditingStaff({...editingStaff, fullName: e.target.value})}
+                  className="input" 
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-2">Email Address</label>
+                <input 
+                  type="email" 
+                  required
+                  value={editingStaff.email}
+                  onChange={(e) => setEditingStaff({...editingStaff, email: e.target.value})}
+                  className="input" 
+                />
+              </div>
+
+              <div className="flex gap-4 pt-4">
+                <button 
+                  type="button" 
+                  onClick={() => setShowEditModal(false)}
+                  className="flex-1 btn-outline py-3"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  disabled={submitting}
+                  className="flex-1 btn-primary py-3"
+                >
+                  {submitting ? <Loader2 className="animate-spin mx-auto" size={20} /> : 'Update Account'}
                 </button>
               </div>
             </form>
