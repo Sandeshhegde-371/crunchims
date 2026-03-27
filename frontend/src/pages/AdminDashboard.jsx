@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
   AreaChart, Area, PieChart, Pie, Cell, LineChart, Line, ComposedChart
@@ -7,10 +7,266 @@ import {
   Package, AlertTriangle, DollarSign, ShoppingCart, 
   TrendingUp, Activity, BarChart3, RefreshCcw,
   Users, ArrowUpRight, ArrowDownRight, Clock,
-  Hash, Percent, Layers
+  Hash, Percent, Layers,
+  // AI Agent panel icons
+  Bot, X, Send, Loader2, Sparkles, ChevronDown, Database
 } from 'lucide-react';
-import { adminService, inventoryService } from '../services/api';
+import { adminService, inventoryService, agentService } from '../services/api';
 import { useNavigate } from 'react-router-dom';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AI Agent Panel Component
+// ─────────────────────────────────────────────────────────────────────────────
+
+const SUGGESTED_QUERIES = [
+  'What is today\'s revenue?',
+  'Which product has the highest sales?',
+  'Show me low stock items',
+  'Top 5 customers by spending',
+  'Total inventory value',
+];
+
+const AgentMessage = ({ msg }) => {
+  const isUser = msg.role === 'user';
+
+  return (
+    <div className={`flex gap-3 ${isUser ? 'flex-row-reverse' : 'flex-row'} items-start`}>
+      {/* Avatar */}
+      <div className={`w-8 h-8 rounded-xl flex-shrink-0 flex items-center justify-center shadow-sm ${
+        isUser
+          ? 'bg-emerald-500 text-white'
+          : 'bg-gradient-to-br from-violet-500 to-indigo-600 text-white'
+      }`}>
+        {isUser ? (
+          <span className="text-xs font-bold">U</span>
+        ) : (
+          <Bot size={14} />
+        )}
+      </div>
+
+      {/* Bubble */}
+      <div className={`max-w-[80%] ${isUser ? 'items-end' : 'items-start'} flex flex-col gap-1`}>
+        <div className={`rounded-2xl px-4 py-3 text-sm leading-relaxed shadow-sm ${
+          isUser
+            ? 'bg-emerald-500 text-white rounded-tr-sm'
+            : 'bg-white border border-slate-100 text-slate-700 rounded-tl-sm'
+        }`}>
+          {msg.content}
+        </div>
+
+        {/* SQL pill (agent messages only) */}
+        {msg.sql && (
+          <details className="w-full">
+            <summary className="cursor-pointer text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1 select-none hover:text-slate-600 transition-colors">
+              <Database size={10} /> View SQL
+            </summary>
+            <pre className="mt-1 bg-slate-900 text-emerald-400 text-[10px] p-3 rounded-xl overflow-x-auto leading-relaxed font-mono">
+              {msg.sql}
+            </pre>
+          </details>
+        )}
+
+        {/* Row count badge */}
+        {msg.rowCount !== undefined && (
+          <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">
+            {msg.rowCount} row{msg.rowCount !== 1 ? 's' : ''} returned
+          </span>
+        )}
+
+        {/* Error styling */}
+        {msg.isError && (
+          <span className="text-[10px] font-bold text-red-400">⚠ Agent error</span>
+        )}
+      </div>
+    </div>
+  );
+};
+
+const AgentPanel = ({ isOpen, onClose }) => {
+  const [messages, setMessages] = useState([
+    {
+      id: 0,
+      role: 'assistant',
+      content: "Hi! I'm your IMS AI Analyst. Ask me anything about your inventory, sales, or business performance — in plain English.",
+    }
+  ]);
+  const [input, setInput] = useState('');
+  const [loading, setLoading] = useState(false);
+  const bottomRef = useRef(null);
+  const inputRef = useRef(null);
+
+  // Auto-scroll to latest message
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, loading]);
+
+  // Focus input when panel opens
+  useEffect(() => {
+    if (isOpen) setTimeout(() => inputRef.current?.focus(), 300);
+  }, [isOpen]);
+
+  const sendMessage = async (query) => {
+    const text = query || input.trim();
+    if (!text || loading) return;
+
+    setInput('');
+    const userMsg = { id: Date.now(), role: 'user', content: text };
+    setMessages(prev => [...prev, userMsg]);
+    setLoading(true);
+
+    try {
+      const { data } = await agentService.chat(text);
+      setMessages(prev => [
+        ...prev,
+        {
+          id: Date.now() + 1,
+          role: 'assistant',
+          content: data.explanation || 'Done.',
+          sql: data.sql,
+          rowCount: data.row_count,
+        }
+      ]);
+    } catch (err) {
+      const detail = err.response?.data?.detail || err.message || 'Unknown error';
+      setMessages(prev => [
+        ...prev,
+        {
+          id: Date.now() + 1,
+          role: 'assistant',
+          content: `Sorry, I couldn't process that query. ${detail}`,
+          isError: true,
+        }
+      ]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  };
+
+  return (
+    <>
+      {/* Backdrop */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-[60]"
+          onClick={onClose}
+        />
+      )}
+
+      {/* Slide-over panel */}
+      <div className={`
+        fixed top-0 right-0 h-full w-full sm:w-[420px] z-[70]
+        bg-slate-50 flex flex-col shadow-2xl
+        transition-transform duration-300 ease-out
+        ${isOpen ? 'translate-x-0' : 'translate-x-full'}
+      `}>
+
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-lg flex-shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
+              <Sparkles size={18} />
+            </div>
+            <div>
+              <h2 className="font-bold text-sm tracking-tight">IMS AI Analyst</h2>
+              <p className="text-[10px] text-violet-200">Powered by SQL Agent</p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="w-8 h-8 flex items-center justify-center rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
+          >
+            <X size={16} />
+          </button>
+        </div>
+
+        {/* Suggested queries (shown when only the welcome message is present) */}
+        {messages.length === 1 && (
+          <div className="px-4 py-3 flex-shrink-0 border-b border-slate-200 bg-white">
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Try asking…</p>
+            <div className="flex flex-wrap gap-1.5">
+              {SUGGESTED_QUERIES.map((q) => (
+                <button
+                  key={q}
+                  onClick={() => sendMessage(q)}
+                  className="text-xs px-3 py-1.5 bg-violet-50 text-violet-700 rounded-full border border-violet-100 hover:bg-violet-100 hover:border-violet-200 transition-all font-medium"
+                >
+                  {q}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Messages */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-5">
+          {messages.map((msg) => (
+            <AgentMessage key={msg.id} msg={msg} />
+          ))}
+
+          {/* Typing indicator */}
+          {loading && (
+            <div className="flex gap-3 items-start">
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center text-white shadow-sm flex-shrink-0">
+                <Bot size={14} />
+              </div>
+              <div className="bg-white border border-slate-100 rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm">
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 bg-violet-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                  <span className="w-2 h-2 bg-violet-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                  <span className="w-2 h-2 bg-violet-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div ref={bottomRef} />
+        </div>
+
+        {/* Input */}
+        <div className="p-4 bg-white border-t border-slate-100 flex-shrink-0">
+          <div className="flex gap-2 items-end">
+            <textarea
+              ref={inputRef}
+              rows={1}
+              value={input}
+              onChange={(e) => {
+                setInput(e.target.value);
+                e.target.style.height = 'auto';
+                e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
+              }}
+              onKeyDown={handleKeyDown}
+              placeholder="Ask about inventory, sales, revenue…"
+              disabled={loading}
+              className="flex-1 resize-none bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-300 focus:border-violet-300 transition-all overflow-hidden leading-relaxed"
+              style={{ minHeight: '48px', maxHeight: '120px' }}
+            />
+            <button
+              onClick={() => sendMessage()}
+              disabled={!input.trim() || loading}
+              className="w-12 h-12 flex-shrink-0 bg-gradient-to-br from-violet-500 to-indigo-600 text-white rounded-xl flex items-center justify-center shadow-lg shadow-violet-200 hover:shadow-violet-300 disabled:opacity-40 disabled:cursor-not-allowed transition-all active:scale-95"
+            >
+              {loading ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
+            </button>
+          </div>
+          <p className="text-center text-[10px] text-slate-300 mt-2 font-medium">
+            Press Enter to send · Shift+Enter for new line
+          </p>
+        </div>
+      </div>
+    </>
+  );
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Admin Dashboard
+// ─────────────────────────────────────────────────────────────────────────────
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -19,6 +275,7 @@ const AdminDashboard = () => {
   const [lowStockItems, setLowStockItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [agentOpen, setAgentOpen] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
@@ -83,13 +340,24 @@ const AdminDashboard = () => {
             Snapshot as of {new Date().toLocaleDateString()} {new Date().toLocaleTimeString()}
           </p>
         </div>
-        <button 
-          onClick={fetchData}
-          className="p-3 bg-white border border-slate-200 rounded-2xl text-slate-600 hover:bg-slate-50 transition-all shadow-sm group flex items-center gap-2"
-        >
-          <RefreshCcw size={20} className="group-active:rotate-180 transition-transform duration-500" />
-          <span className="text-sm font-bold">Refresh Analytics</span>
-        </button>
+        <div className="flex items-center gap-3">
+          {/* ── AI Agent Toggle Button ── */}
+          <button
+            onClick={() => setAgentOpen(true)}
+            className="flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-violet-500 to-indigo-600 text-white rounded-2xl shadow-lg shadow-violet-200 hover:shadow-violet-300 hover:scale-[1.03] active:scale-95 transition-all font-semibold text-sm"
+          >
+            <Sparkles size={18} />
+            Ask AI Analyst
+          </button>
+
+          <button 
+            onClick={fetchData}
+            className="p-3 bg-white border border-slate-200 rounded-2xl text-slate-600 hover:bg-slate-50 transition-all shadow-sm group flex items-center gap-2"
+          >
+            <RefreshCcw size={20} className="group-active:rotate-180 transition-transform duration-500" />
+            <span className="text-sm font-bold">Refresh Analytics</span>
+          </button>
+        </div>
       </div>
 
       {/* 6 KPI Cards Section */}
@@ -274,9 +542,33 @@ const AdminDashboard = () => {
           </table>
         </div>
       </div>
+
+      {/* ── AI Agent Slide-Over Panel ── */}
+      <AgentPanel isOpen={agentOpen} onClose={() => setAgentOpen(false)} />
+
+      {/* ── Floating AI bubble (always visible on dashboard) ── */}
+      <button
+        onClick={() => setAgentOpen(true)}
+        title="Open AI Analyst"
+        className={`
+          fixed bottom-8 right-8 z-50
+          w-14 h-14 rounded-2xl
+          bg-gradient-to-br from-violet-500 to-indigo-600
+          text-white shadow-xl shadow-violet-300
+          flex items-center justify-center
+          hover:scale-110 active:scale-95 transition-all duration-200
+          ${agentOpen ? 'opacity-0 pointer-events-none' : 'opacity-100'}
+        `}
+      >
+        <Sparkles size={24} />
+      </button>
     </div>
   );
 };
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Sub-components
+// ─────────────────────────────────────────────────────────────────────────────
 
 const KpiCard = ({ title, value, icon: Icon, color, isAlert }) => {
   const colorMap = {

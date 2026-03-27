@@ -48,4 +48,17 @@ export const userService = {
   returnItem: (orderItemId) => api.post(`/user/return/${orderItemId}`),
 };
 
+// ── SQL Agent (FastAPI on :8000) ────────────────────────────────────────────
+const agentApi = axios.create({
+  baseURL: 'http://localhost:8000', // FastAPI SQL-Agent service
+});
+
+export const agentService = {
+  chat: (query) => agentApi.post('/chat', { query }),
+  health: () => agentApi.get('/health'),
+  getSchema: () => agentApi.get('/schema'),
+  refreshSchema: () => agentApi.post('/refresh-schema'),
+};
+
 export default api;
+
